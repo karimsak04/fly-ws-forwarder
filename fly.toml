@@ -1,18 +1,13 @@
-app = "fly-ws-forwarder"
-
-[build]
-  dockerfile = "Dockerfile"
-
-[env]
-
 [[services]]
   internal_port = 8080
   protocol = "tcp"
 
   [[services.ports]]
+    handlers = ["http"]
     port = 80
 
   [[services.ports]]
+    handlers = ["tls", "http"]
     port = 443
 
   [[services.tcp_checks]]
