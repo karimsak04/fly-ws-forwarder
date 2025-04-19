@@ -8,12 +8,12 @@ app = "fly-ws-forwarder"
   protocol = "tcp"
 
   [[services.ports]]
-    port = 80
     handlers = ["http"]
+    port = 80
 
   [[services.ports]]
-    port = 443
     handlers = ["tls", "http"]
+    port = 443
 
   [[services.tcp_checks]]
     interval = "15s"
