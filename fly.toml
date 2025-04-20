@@ -1,16 +1,35 @@
 app = "fly-ws-forwarder"
 
-   [env]
-     PORT = "8080"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
 
-   [[services]]
-     internal_port = 8080
-     protocol = "tcp"
+[env]
+  PORT = "8080"
 
-     [[services.ports]]
-       port = 80
-       handlers = ["http"]
+[experimental]
+  allowed_public_ports = []
+  auto_rollback = true
 
-     [[services.ports]]
-       port = 443
-       handlers = ["tls", "http"]
+[[services]]
+  internal_port = 8080
+  protocol = "http"  # << FIXED: use HTTP so Fly handles TLS
+
+  [services.concurrency]
+    type = "connections"
+    soft_limit = 20
+    hard_limit = 25
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "1s"
+    restart_limit = 0
