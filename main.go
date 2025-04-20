@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 func handle(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +27,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req.Header = r.Header
+	req.Header = r.Header.Clone() // clone to avoid unexpected side effects
 	req.Host = u.Host
 
 	resp, err := http.DefaultClient.Do(req)
@@ -47,7 +48,12 @@ func handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // fallback if PORT is not set
+	}
+
 	http.HandleFunc("/", handle)
-	log.Println("WebSocket forwarder running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Println("WebSocket forwarder running on port:", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
