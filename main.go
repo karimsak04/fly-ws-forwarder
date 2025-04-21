@@ -5,14 +5,22 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
+// ACME challenge handler
 func acmeHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Responding to ACME challenge:", r.URL.Path)
+	token := strings.TrimPrefix(r.URL.Path, "/.well-known/acme-challenge/")
+	if token == "" {
+		http.Error(w, "Missing token", http.StatusBadRequest)
+		return
+	}
+	log.Println("Responding to ACME challenge for token:", token)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("acme-challenge-response"))
+	w.Write([]byte(token)) // Echo the token back as response
 }
 
+// Forward handler to relay requests to target from custom header
 func forwardHandler(w http.ResponseWriter, r *http.Request) {
 	target := r.Header.Get("X-Forward-To")
 	if target == "" {
@@ -26,21 +34,13 @@ func forwardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Copy body to preserve reusability
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Failed to read body", http.StatusInternalServerError)
-		return
-	}
-	defer r.Body.Close()
-
-	req, err := http.NewRequest(r.Method, u.String(), io.NopCloser(io.MultiReader(io.NewSectionReader(io.NewBuffer(bodyBytes), 0, int64(len(bodyBytes))))))
+	req, err := http.NewRequest(r.Method, u.String(), r.Body)
 	if err != nil {
 		http.Error(w, "Failed to create request", http.StatusInternalServerError)
 		return
 	}
 
-	req.Header = r.Header.Clone()
+	req.Header = r.Header
 	req.Host = u.Host
 
 	resp, err := http.DefaultClient.Do(req)
