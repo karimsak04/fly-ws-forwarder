@@ -1,14 +1,40 @@
 app = "fly-ws-forwarder"
+primary_region = "ams"  
 
-kill_signal = "SIGINT"
-kill_timeout = 5
+[build]
+  dockerfile = "Dockerfile"
 
 [env]
   PORT = "8080"
   GO_ENV = "production"
 
-[build]
-  builder = "paketobuildpacks/builder:base"
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 800
+
+  [[http_service.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[http_service.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[http_service.http_checks]]
+    interval = "15s"
+    timeout = "5s"
+    method = "GET"
+    path = "/healthz"
+    protocol = "http"
+    grace_period = "5s"
+    restart_limit = 3
 
 [metrics]
   port = 8080
@@ -18,36 +44,7 @@ kill_timeout = 5
   strategy = "rolling"
   max_unavailable = 0
 
-[experimental]
-  auto_rollback = true
-  enable_consul = true
-
-[[services]]
-  internal_port = 8080
-  protocol = "http"
-
-  [services.concurrency]
-    type = "connections"
-    soft_limit = 100
-    hard_limit = 150
-
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
-
-  [[services.http_checks]]
-    interval = "10s"
-    timeout = "3s"
-    method = "head"
-    path = "/healthz"
-    protocol = "http"
-    restart_limit = 5
-    grace_period = "15s"
-
 [vm]
-  memory = "512mb"
+  memory = "1gb"
   cpus = 2
+  kernel_args = ["net.ipv4.tcp_keepalive_time=60", "net.ipv4.tcp_keepalive_intvl=30"]
