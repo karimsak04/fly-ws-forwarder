@@ -13,7 +13,7 @@ processes = []
 
 [[services]]
   internal_port = 8080
-  protocol = "http" # NOT tcp, Fly terminates HTTPS and forwards HTTP
+  protocol = "hcp" # NOT tcp, Fly terminates HTTPS and forwards HTTP
 
   [services.concurrency]
     type = "connections"
