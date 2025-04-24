@@ -2,23 +2,34 @@ app = "fly-ws-forwarder"
 
 kill_signal = "SIGINT"
 kill_timeout = 5
-processes = []
 
 [env]
   PORT = "8080"
+  GO_ENV = "production"
+
+[build]
+  builder = "paketobuildpacks/builder:base"
+
+[metrics]
+  port = 8080
+  path = "/metrics"
+
+[deploy]
+  strategy = "rolling"
+  max_unavailable = 0
 
 [experimental]
-  allowed_public_ports = []
   auto_rollback = true
+  enable_consul = true
 
 [[services]]
   internal_port = 8080
-  protocol = "hcp" # NOT tcp, Fly terminates HTTPS and forwards HTTP
+  protocol = "http"
 
   [services.concurrency]
     type = "connections"
-    soft_limit = 20
-    hard_limit = 25
+    soft_limit = 100
+    hard_limit = 150
 
   [[services.ports]]
     port = 80
@@ -29,10 +40,14 @@ processes = []
     handlers = ["tls", "http"]
 
   [[services.http_checks]]
-    interval = "15s"
-    timeout = "5s"
-    method = "get"
-    path = "/"
+    interval = "10s"
+    timeout = "3s"
+    method = "head"
+    path = "/healthz"
     protocol = "http"
-    restart_limit = 3
-    grace_period = "10s"
+    restart_limit = 5
+    grace_period = "15s"
+
+[vm]
+  memory = "512mb"
+  cpus = 2
